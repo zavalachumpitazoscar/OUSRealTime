@@ -6,94 +6,37 @@
 
 <title>OUS GPS PRO</title>
 
+<link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<style>
-
-html, body{
-  margin:0;
-  padding:0;
-  height:100%;
-  font-family: Arial;
-}
-
-#map{
-  width:100%;
-  height:100vh;
-  display:none;
-}
-
-.modal{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.6);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-}
-
-.modal-box{
-  background:white;
-  padding:25px;
-  border-radius:12px;
-  text-align:center;
-  width:90%;
-  max-width:420px;
-}
-
-.btn{
-  margin-top:15px;
-  padding:10px 15px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  background:#007bff;
-  color:white;
-}
-
-.info{
-  position:absolute;
-  bottom:15px;
-  left:15px;
-  background:white;
-  padding:10px;
-  border-radius:10px;
-  z-index:999;
-  display:none;
-  font-size:14px;
-}
-
-</style>
 </head>
 
 <body>
 
+<!-- MODAL -->
 <div class="modal" id="modal">
 
   <div class="modal-box">
 
-    <h3>📍 OUS GPS ACTIVO</h3>
+    <h3>📍 OUS GPS PRO</h3>
 
     <div id="estado">Inicializando sistema...</div>
 
-    <button class="btn" id="btnContinuar" style="display:none;">
-      Ver mapa igual
+    <button class="btn" id="btnContinuar">
+      Ver mapa en vivo
     </button>
 
   </div>
 
 </div>
 
+<!-- MAPA -->
 <div id="map"></div>
 
+<!-- INFO -->
 <div class="info" id="info">
 
 <b>Técnico:</b> <span id="tec"></span><br>
-<b>Destino:</b> <span id="dest"></span><br>
+<span class="badge">EN TIEMPO REAL</span><br><br>
 
 <button class="btn" id="navBtn">Abrir Google Maps</button>
 
@@ -118,201 +61,104 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ======================
-// PARAMETROS
-// ======================
+// PARAMS
 const params = new URLSearchParams(window.location.search);
-
 const correo = params.get("correo");
 const direccion = params.get("direccion");
 
-// VALIDACION MINIMA
 if(!correo){
-  document.getElementById("estado").innerHTML =
-  "Falta correo del técnico";
-  throw new Error("sin correo");
+  document.getElementById("estado").innerHTML="Falta correo";
+  throw new Error();
 }
 
 document.getElementById("tec").textContent = correo;
-document.getElementById("dest").textContent = direccion || "Sin destino";
 
-// ======================
 // VARIABLES
-// ======================
 let map;
 let markerTec;
 let markerDest;
-let ruta;
 let destino = null;
 
-// ======================
-// GEOCODING ROBUSTO
-// ======================
+// GEOCODING
 async function geocodificar(dir){
 
   if(!dir) return null;
 
   let url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(dir)}`;
-
   let res = await fetch(url);
   let data = await res.json();
 
-  if(data.length > 0){
-    return {
-      lat: parseFloat(data[0].lat),
-      lng: parseFloat(data[0].lon)
-    };
+  if(data.length>0){
+    return {lat:+data[0].lat,lng:+data[0].lon};
   }
 
-  // fallback limpieza (JR, AV, etc)
   let limpio = dir.replace(/Jr\.|Av\.|Calle|Jiron/gi,"");
 
   url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(limpio)}`;
-
   res = await fetch(url);
   data = await res.json();
 
-  if(data.length > 0){
-    return {
-      lat: parseFloat(data[0].lat),
-      lng: parseFloat(data[0].lon)
-    };
+  if(data.length>0){
+    return {lat:+data[0].lat,lng:+data[0].lon};
   }
 
   return null;
 }
 
-// ======================
 // MAPA
-// ======================
 function initMap(lat,lng){
-
   map = L.map('map').setView([lat,lng],15);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© OpenStreetMap'
+    attribution:'© OSM'
   }).addTo(map);
 
-  markerTec = L.marker([lat,lng]).addTo(map).bindPopup("Técnico");
+  markerTec = L.marker([lat,lng]).addTo(map);
 }
 
-// ======================
-// RUTA REAL
-// ======================
-async function obtenerRuta(oLat,oLng,dLat,dLng){
-
-  const url =
-  `https://router.project-osrm.org/route/v1/driving/` +
-  `${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson`;
-
-  const res = await fetch(url);
-  const data = await res.json();
-
-  return data.routes[0].geometry;
-}
-
-// ======================
-// GPS EN TIEMPO REAL
-// ======================
-navigator.geolocation.watchPosition(
-
-async(pos)=>{
+// GPS
+navigator.geolocation.watchPosition(async(pos)=>{
 
   const lat = pos.coords.latitude;
   const lng = pos.coords.longitude;
 
-  // FIREBASE SIEMPRE
   await setDoc(doc(db,"ubicaciones",correo),{
-    correo,
-    lat,
-    lng,
-    destino: direccion || null,
-    fecha: new Date().toLocaleString()
+    correo,lat,lng,direccion,fecha:new Date().toLocaleString()
   });
 
-  // PRIMERA VEZ
   if(!map){
-
-    document.getElementById("estado").innerHTML =
-    "Buscando destino...";
 
     destino = await geocodificar(direccion);
 
     initMap(lat,lng);
 
-    // SI HAY DESTINO
     if(destino){
-
-      markerDest = L.marker([destino.lat,destino.lng])
-        .addTo(map)
-        .bindPopup("Destino");
-
-      const geo = await obtenerRuta(lat,lng,destino.lat,destino.lng);
-
-      ruta = L.geoJSON(geo,{
-        style:{ color:"blue", weight:5 }
-      }).addTo(map);
-
-      document.getElementById("estado").innerHTML =
-      "Mapa con ruta activa";
-
-    }else{
-
-      document.getElementById("estado").innerHTML =
-      "Mapa activo (sin ubicación de destino)";
+      markerDest = L.marker([destino.lat,destino.lng]).addTo(map);
     }
 
-    document.getElementById("btnContinuar").style.display="inline-block";
+    document.getElementById("estado").innerHTML =
+      destino ? "Sistema listo con destino" : "Sistema activo sin destino";
   }
 
-  // actualizar técnico
   if(markerTec){
     markerTec.setLatLng([lat,lng]);
     map.setView([lat,lng]);
   }
 
-},
+});
 
-(err)=>{
-  document.getElementById("estado").innerHTML =
-  "GPS error: " + err.message;
-},
-
-{
-  enableHighAccuracy:true
-}
-
-// ======================
-
-);
-
-// ======================
 // BOTÓN MAPA
-// ======================
-document.getElementById("btnContinuar").onclick = ()=>{
-
+document.getElementById("btnContinuar").onclick=()=>{
   document.getElementById("modal").style.display="none";
   document.getElementById("map").style.display="block";
   document.getElementById("info").style.display="block";
-
   setTimeout(()=>map.invalidateSize(),300);
 };
 
-// ======================
 // GOOGLE MAPS
-// ======================
-document.getElementById("navBtn").onclick = ()=>{
-
+document.getElementById("navBtn").onclick=()=>{
   if(destino){
-
-    const url =
-    `https://www.google.com/maps/dir/?api=1&destination=${destino.lat},${destino.lng}`;
-
-    window.open(url,"_blank");
-
-  }else{
-
-    alert("No hay destino definido");
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destino.lat},${destino.lng}`);
   }
 };
 
