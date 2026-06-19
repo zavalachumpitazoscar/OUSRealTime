@@ -4,12 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>OUS - Seguimiento GPS</title>
+<title>OUS - GPS + RUTA</title>
 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
@@ -17,24 +14,12 @@ html, body{
     margin:0;
     padding:0;
     height:100%;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
 }
 
 #map{
     width:100%;
     height:100vh;
-    display:none;
-}
-
-.info{
-    position:absolute;
-    bottom:15px;
-    left:15px;
-    z-index:1000;
-    background:white;
-    padding:12px;
-    border-radius:10px;
-    box-shadow:0 0 10px rgba(0,0,0,.2);
     display:none;
 }
 
@@ -44,44 +29,41 @@ html, body{
     left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,.5);
+    background:rgba(0,0,0,0.6);
     display:flex;
     align-items:center;
     justify-content:center;
     z-index:9999;
 }
 
-.modal-content{
+.modal-box{
     background:white;
+    padding:25px;
+    border-radius:12px;
+    text-align:center;
     width:90%;
     max-width:400px;
-    border-radius:12px;
-    padding:25px;
-    text-align:center;
-}
-
-.modal h2{
-    margin-top:0;
 }
 
 .btn{
-    background:#0d6efd;
-    color:white;
+    margin-top:15px;
+    padding:10px 15px;
     border:none;
-    padding:12px 20px;
     border-radius:8px;
     cursor:pointer;
-    margin-top:15px;
+    background:#007bff;
+    color:white;
 }
 
-.estado-ok{
-    color:green;
-    font-weight:bold;
-}
-
-.estado-error{
-    color:red;
-    font-weight:bold;
+.info{
+    position:absolute;
+    bottom:15px;
+    left:15px;
+    background:white;
+    padding:10px;
+    border-radius:10px;
+    z-index:999;
+    display:none;
 }
 
 </style>
@@ -89,23 +71,17 @@ html, body{
 
 <body>
 
-<div id="modal" class="modal">
+<div class="modal" id="modal">
 
-  <div class="modal-content">
+  <div class="modal-box">
 
-      <h2>📍 Ubicación Compartida</h2>
+    <h3>📍 OUS GPS</h3>
 
-      <div id="mensaje">
-          Obteniendo ubicación...
-      </div>
+    <div id="estado">Iniciando...</div>
 
-      <button
-        id="btnContinuar"
-        class="btn"
-        style="display:none;"
-      >
-        Continuar
-      </button>
+    <button class="btn" id="btnContinuar" style="display:none;">
+      Continuar
+    </button>
 
   </div>
 
@@ -113,22 +89,10 @@ html, body{
 
 <div id="map"></div>
 
-<div id="info" class="info">
-
-  <b>Técnico:</b><br>
-  <span id="correoTecnico"></span>
-
-  <hr>
-
-  <b>Última actualización:</b><br>
-  <span id="ultimaFecha"></span>
-
-  <hr>
-
-  <span class="estado-ok">
-    🟢 GPS activo
-  </span>
-
+<div class="info" id="info">
+<b>Técnico:</b> <span id="tec"></span><br>
+<b>Destino:</b> <span id="dest"></span><br>
+<button class="btn" id="navBtn">Abrir Google Maps</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -136,141 +100,158 @@ html, body{
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-
-import {
-  getFirestore,
-  doc,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
-
   apiKey: "AIzaSyBz9IVIpECD16fSo5Sz2jc6SZkTJHr2bk0",
   authDomain: "ous-rastreo.firebaseapp.com",
   projectId: "ous-rastreo",
   storageBucket: "ous-rastreo.firebasestorage.app",
   messagingSenderId: "606108188440",
   appId: "1:606108188440:web:0416b98a7738af947ae86d"
-
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// PARAMETROS
 const params = new URLSearchParams(window.location.search);
+
 const correo = params.get("correo");
+const direccion = params.get("direccion");
 
-if(!correo){
-
-    document.getElementById("mensaje").innerHTML =
-      "<span class='estado-error'>No se recibió el correo desde OUS.</span>";
-
-    throw new Error("No se recibió correo.");
+// VALIDACION
+if(!correo || !direccion){
+  document.getElementById("estado").innerHTML =
+  "Faltan datos (correo o dirección)";
+  throw new Error("faltan datos");
 }
 
-document.getElementById("correoTecnico").textContent = correo;
+document.getElementById("tec").textContent = correo;
+document.getElementById("dest").textContent = direccion;
 
+// GEOLOCALIZAR DIRECCION
+async function geocodificar(dir){
+
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dir)}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if(data.length === 0) return null;
+
+  return {
+    lat: parseFloat(data[0].lat),
+    lng: parseFloat(data[0].lon)
+  };
+}
+
+// VARIABLES MAPA
 let map;
-let marker;
+let markerTec;
+let markerDest;
+let rutaLine;
 
-function iniciarMapa(lat,lng){
+// INICIAR MAPA
+function initMap(lat,lng){
 
-    if(map) return;
+  map = L.map('map').setView([lat,lng],15);
 
-    map = L.map('map').setView([lat,lng],16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap'
+  }).addTo(map);
 
-    L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        attribution:'© OpenStreetMap'
-      }
-    ).addTo(map);
-
-    marker = L.marker([lat,lng])
-      .addTo(map)
-      .bindPopup("Mi ubicación")
-      .openPopup();
+  markerTec = L.marker([lat,lng]).addTo(map).bindPopup("Técnico");
 }
 
-document.getElementById("btnContinuar").onclick = () => {
-
-    document.getElementById("modal").style.display = "none";
-
-    document.getElementById("map").style.display = "block";
-
-    document.getElementById("info").style.display = "block";
-
-    setTimeout(() => {
-        map.invalidateSize();
-    },300);
-};
-
+// GPS TECNICO
 navigator.geolocation.watchPosition(
 
-async(position)=>{
+async(pos)=>{
 
-    const lat = position.coords.latitude;
-    const lng = position.coords.longitude;
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
 
-    const fecha = new Date().toLocaleString();
+  // guardar firebase
+  await setDoc(doc(db,"ubicaciones",correo),{
+    correo,
+    lat,
+    lng,
+    fecha:new Date().toLocaleString()
+  });
 
-    await setDoc(
-      doc(db,"ubicaciones",correo),
-      {
-        correo: correo,
-        lat: lat,
-        lng: lng,
-        fecha: fecha,
-        activo: true
-      }
-    );
+  // crear mapa primera vez
+  if(!map){
 
-    document.getElementById("ultimaFecha").textContent = fecha;
+    const destino = await geocodificar(direccion);
 
-    if(!map){
-
-        iniciarMapa(lat,lng);
-
-        document.getElementById("mensaje").innerHTML = `
-            <div class="estado-ok">
-              Ubicación compartida correctamente
-            </div>
-            <br>
-            Técnico:<br>
-            <b>${correo}</b>
-        `;
-
-        document.getElementById("btnContinuar").style.display =
-          "inline-block";
+    if(!destino){
+      document.getElementById("estado").innerHTML =
+      "No se pudo encontrar la dirección";
+      return;
     }
 
-    if(marker){
+    initMap(lat,lng);
 
-        marker.setLatLng([lat,lng]);
+    markerDest = L.marker([destino.lat,destino.lng])
+      .addTo(map)
+      .bindPopup("Cliente")
+      .openPopup();
 
-        map.setView([lat,lng]);
-    }
+    // ruta simple (línea recta visual)
+    rutaLine = L.polyline(
+      [[lat,lng],[destino.lat,destino.lng]],
+      {color:'blue'}
+    ).addTo(map);
+
+    document.getElementById("estado").innerHTML =
+      "Ubicación lista";
+
+    document.getElementById("btnContinuar").style.display="inline-block";
+  }
+
+  // actualizar técnico
+  if(markerTec){
+    markerTec.setLatLng([lat,lng]);
+    map.setView([lat,lng]);
+  }
 
 },
 
-(error)=>{
-
-    document.getElementById("mensaje").innerHTML = `
-      <div class="estado-error">
-        Error GPS:
-        ${error.message}
-      </div>
-    `;
-
+(err)=>{
+  document.getElementById("estado").innerHTML =
+  "Error GPS: " + err.message;
 },
 
 {
-    enableHighAccuracy:true,
-    maximumAge:0,
-    timeout:15000
+  enableHighAccuracy:true
 }
 
 );
+
+// BOTON CONTINUAR
+document.getElementById("btnContinuar").onclick = ()=>{
+
+  document.getElementById("modal").style.display="none";
+  document.getElementById("map").style.display="block";
+  document.getElementById("info").style.display="block";
+
+  setTimeout(()=>map.invalidateSize(),300);
+};
+
+// GOOGLE MAPS
+document.getElementById("navBtn").onclick = ()=>{
+
+  navigator.geolocation.getCurrentPosition((pos)=>{
+
+    const url =
+    `https://www.google.com/maps/dir/?api=1&destination=${direccion}`;
+
+    window.open(url,"_blank");
+
+  });
+
+};
 
 </script>
 
