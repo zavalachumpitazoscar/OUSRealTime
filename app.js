@@ -18,28 +18,34 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-document.getElementById("estado").innerHTML = "Conectando...";
+navigator.geolocation.getCurrentPosition(
+  async (position) => {
 
-try {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
 
-  await setDoc(
-    doc(db, "prueba", "documento1"),
-    {
-      mensaje: "Hola Firebase",
-      fecha: new Date().toISOString()
+    document.getElementById("estado").innerHTML =
+      `Lat: ${lat}<br>Lng: ${lng}`;
+
+    try {
+
+      await setDoc(
+        doc(db, "ubicaciones", "oscar"),
+        {
+          tecnico: "oscar",
+          lat: lat,
+          lng: lng,
+          fecha: new Date().toISOString()
+        }
+      );
+
+      console.log("Ubicación guardada");
+
+    } catch(error) {
+
+      console.error(error);
+
     }
-  );
 
-  document.getElementById("estado").innerHTML =
-    "FIREBASE OK";
-
-  console.log("Documento creado");
-
-} catch (error) {
-
-  document.getElementById("estado").innerHTML =
-    "ERROR FIREBASE";
-
-  console.error(error);
-
-}
+  }
+);
