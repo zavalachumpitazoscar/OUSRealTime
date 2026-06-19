@@ -12,41 +12,34 @@ const firebaseConfig = {
   projectId: "ous-rastreo",
   storageBucket: "ous-rastreo.firebasestorage.app",
   messagingSenderId: "606108188440",
-  appId: "1:606108188440:web:0416b98a7738af947ae86d",
-  measurementId: "G-22W9LPCC35"
+  appId: "1:606108188440:web:0416b98a7738af947ae86d"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Por ahora un técnico fijo
-const tecnico = "oscar";
+document.getElementById("estado").innerHTML = "Conectando...";
 
-navigator.geolocation.watchPosition(
-
-async (position) => {
-
-  const lat = position.coords.latitude;
-  const lng = position.coords.longitude;
-
-  document.getElementById("estado").innerHTML =
-    "Lat: " + lat +
-    "<br>Lng: " + lng;
+try {
 
   await setDoc(
-    doc(db, "ubicaciones", tecnico),
+    doc(db, "prueba", "documento1"),
     {
-      tecnico: tecnico,
-      lat: lat,
-      lng: lng,
+      mensaje: "Hola Firebase",
       fecha: new Date().toISOString()
     }
   );
 
-},
+  document.getElementById("estado").innerHTML =
+    "FIREBASE OK";
 
-(error) => {
+  console.log("Documento creado");
+
+} catch (error) {
+
+  document.getElementById("estado").innerHTML =
+    "ERROR FIREBASE";
+
   console.error(error);
-}
 
-);
+}
