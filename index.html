@@ -1,37 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Monitor OUS</title>
+<meta charset="utf-8">
+<title>OUS - Compartir Ubicación</title>
 
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+<style>
+body{
+    font-family: Arial;
+    text-align:center;
+    padding:30px;
+}
 
-    <style>
-        body{
-            font-family: Arial;
-            margin:20px;
-        }
+.estado{
+    font-size:20px;
+    margin-top:20px;
+}
+</style>
 
-        #map{
-            height:500px;
-            width:100%;
-            margin-top:15px;
-        }
-    </style>
 </head>
 <body>
 
-<h2>Ubicación Técnico</h2>
+<h2>OUS - Seguimiento GPS</h2>
 
-<div id="datos">
-Cargando...
+<div id="correo"></div>
+<div class="estado" id="estado">
+Esperando ubicación...
 </div>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="module">
 
@@ -40,61 +34,72 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebas
 import {
   getFirestore,
   doc,
-  onSnapshot
+  setDoc
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBz9IVIpECD16fSo5Sz2jc6SZkTJHr2bk0",
+
+  apiKey: "TU_API_KEY",
   authDomain: "ous-rastreo.firebaseapp.com",
   projectId: "ous-rastreo",
   storageBucket: "ous-rastreo.firebasestorage.app",
   messagingSenderId: "606108188440",
   appId: "1:606108188440:web:0416b98a7738af947ae86d"
+
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const map = L.map('map').setView([-12.0464, -77.0428], 13);
+const params = new URLSearchParams(window.location.search);
 
-L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+const correo = params.get("correo");
+
+document.getElementById("correo").innerHTML =
+  "<b>Técnico:</b> " + correo;
+
+if(!correo){
+
+  document.getElementById("estado").innerHTML =
+  "No se recibió el correo.";
+
+  throw new Error("correo no recibido");
+}
+
+navigator.geolocation.watchPosition(
+
+  async(position)=>{
+
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    await setDoc(
+      doc(db,"ubicaciones",correo),
+      {
+        correo: correo,
+        lat: lat,
+        lng: lng,
+        fecha: new Date().toLocaleString()
+      }
+    );
+
+    document.getElementById("estado").innerHTML =
+      "Ubicación enviada correctamente";
+
+  },
+
+  (error)=>{
+
+    document.getElementById("estado").innerHTML =
+      "Error GPS: " + error.message;
+
+  },
+
   {
-    attribution: '&copy; OpenStreetMap'
+    enableHighAccuracy:true,
+    maximumAge:0
   }
-).addTo(map);
 
-let marker;
-
-onSnapshot(
-  doc(db, "ubicaciones", "oscar"),
-  (snapshot) => {
-
-    if (!snapshot.exists()) {
-      document.getElementById("datos").innerHTML =
-        "No existe información";
-      return;
-    }
-
-    const d = snapshot.data();
-
-    document.getElementById("datos").innerHTML = `
-      <b>Técnico:</b> ${d.tecnico}<br>
-      <b>Latitud:</b> ${d.lat}<br>
-      <b>Longitud:</b> ${d.lng}<br>
-      <b>Fecha:</b> ${d.fecha}
-    `;
-
-    if(marker){
-      map.removeLayer(marker);
-    }
-
-    marker = L.marker([d.lat, d.lng])
-      .addTo(map)
-      .bindPopup(d.tecnico);
-
-    map.setView([d.lat, d.lng], 16);
-  }
 );
 
 </script>
