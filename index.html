@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>OUS - GPS PRO</title>
+<title>OUS - GPS + RUTA REAL</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -75,9 +75,9 @@ html, body{
 
   <div class="modal-box">
 
-    <h3>📍 OUS GPS ACTIVO</h3>
+    <h3>📍 OUS GPS + RUTA REAL</h3>
 
-    <div id="estado">Iniciando GPS...</div>
+    <div id="estado">Iniciando...</div>
 
     <button class="btn" id="btnContinuar" style="display:none;">
       Ver mapa
@@ -117,7 +117,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// PARAMETROS DESDE APP SHEET
+// PARAMETROS
 const params = new URLSearchParams(window.location.search);
 
 const correo = params.get("correo");
@@ -155,11 +155,19 @@ function initMap(lat,lng){
     .addTo(map)
     .bindPopup("Destino")
     .openPopup();
+}
 
-  ruta = L.polyline(
-    [[lat,lng],[latDestino,lngDestino]],
-    {color:'blue', weight:4}
-  ).addTo(map);
+// RUTA REAL (OSRM)
+async function obtenerRuta(origenLat, origenLng, destLat, destLng){
+
+  const url =
+  `https://router.project-osrm.org/route/v1/driving/` +
+  `${origenLng},${origenLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  return data.routes[0].geometry;
 }
 
 // GPS EN TIEMPO REAL
@@ -185,8 +193,18 @@ async(pos)=>{
 
     initMap(lat,lng);
 
+    // DIBUJAR RUTA REAL
+    const geo = await obtenerRuta(lat,lng,latDestino,lngDestino);
+
+    ruta = L.geoJSON(geo,{
+      style:{
+        color:"blue",
+        weight:5
+      }
+    }).addTo(map);
+
     document.getElementById("estado").innerHTML =
-    "Ubicación lista correctamente";
+    "Ubicación lista con ruta real";
 
     document.getElementById("btnContinuar").style.display="inline-block";
   }
@@ -195,10 +213,6 @@ async(pos)=>{
   if(markerTec){
     markerTec.setLatLng([lat,lng]);
     map.setView([lat,lng]);
-  }
-
-  if(ruta){
-    ruta.setLatLngs([[lat,lng],[latDestino,lngDestino]]);
   }
 
 },
