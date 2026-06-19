@@ -183,7 +183,10 @@ navigator.geolocation.watchPosition(async(pos)=>{
     }).addTo(map);
 
     setTimeout(()=>{
-      map.fitBounds(ruta.getBounds());
+      map.fitBounds(ruta.getBounds(), {
+  padding: [50, 50],
+  maxZoom: 15
+});
     },300);
 
   }
