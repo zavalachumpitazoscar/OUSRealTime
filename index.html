@@ -174,20 +174,19 @@ navigator.geolocation.watchPosition(async(pos)=>{
 
   if(geo){
 
-    ruta = L.geoJSON(geo,{
-      style:{
-        color:"#2563eb",
-        weight:6,
-        opacity:0.9
-      }
-    }).addTo(map);
+  ruta = L.geoJSON(geo,{
+  style:{
+    color:"#2563eb",
+    weight:6,
+    opacity:0.9
+  }
+}).addTo(map);
 
-    setTimeout(()=>{
-      map.fitBounds(ruta.getBounds(), {
-  padding: [50, 50],
-  maxZoom: 15
-});
-    },300);
+setTimeout(()=>{
+  map.fitBounds(ruta.getBounds(),{
+    padding:[80,80]
+  });
+},300);
 
   }
 
