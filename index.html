@@ -147,8 +147,14 @@ async function geocodificar(dir){
 
   if(!dir) return null;
 
-  // 1. INTENTO NORMAL
-  let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dir)}`;
+  // 🔵 1. LIMPIEZA INTELIGENTE (Perú)
+  let limpio = dir
+    .replace(/Jr\.|Jiron|Av\.|Calle/gi, "")
+    .replace(/\d{5}/g, "") // quita códigos postales
+    .trim();
+
+  // 🔵 2. INTENTO 1: dirección original
+  let url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(dir)}`;
 
   let res = await fetch(url);
   let data = await res.json();
@@ -160,10 +166,24 @@ async function geocodificar(dir){
     };
   }
 
-  // 2. LIMPIEZA PLUS CODE
-  let limpio = dir.replace(/^[0-9A-Z]{2,8}\+?[0-9A-Z]*\s/, "");
+  // 🔵 3. INTENTO 2: dirección limpia
+  url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(limpio)}`;
 
-  url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(limpio)}`;
+  res = await fetch(url);
+  data = await res.json();
+
+  if(data.length > 0){
+    return {
+      lat: parseFloat(data[0].lat),
+      lng: parseFloat(data[0].lon)
+    };
+  }
+
+  // 🔵 4. INTENTO 3: solo distrito + país (fallback fuerte)
+  const partes = dir.split(",");
+  const fallback = partes.length > 1 ? partes.slice(1).join(",") : dir;
+
+  url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(fallback)}`;
 
   res = await fetch(url);
   data = await res.json();
@@ -177,7 +197,6 @@ async function geocodificar(dir){
 
   return null;
 }
-
 // ===============================
 // 🗺 MAPA
 // ===============================
