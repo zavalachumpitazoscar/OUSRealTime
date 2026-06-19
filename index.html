@@ -4,66 +4,67 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>OUS - GPS + RUTA REAL</title>
+<title>OUS GPS PRO</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
 html, body{
-    margin:0;
-    padding:0;
-    height:100%;
-    font-family: Arial;
+  margin:0;
+  padding:0;
+  height:100%;
+  font-family: Arial;
 }
 
 #map{
-    width:100%;
-    height:100vh;
-    display:none;
+  width:100%;
+  height:100vh;
+  display:none;
 }
 
 .modal{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.6);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:9999;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
 }
 
 .modal-box{
-    background:white;
-    padding:25px;
-    border-radius:12px;
-    text-align:center;
-    width:90%;
-    max-width:400px;
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  text-align:center;
+  width:90%;
+  max-width:420px;
 }
 
 .btn{
-    margin-top:15px;
-    padding:10px 15px;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    background:#007bff;
-    color:white;
+  margin-top:15px;
+  padding:10px 15px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  background:#007bff;
+  color:white;
 }
 
 .info{
-    position:absolute;
-    bottom:15px;
-    left:15px;
-    background:white;
-    padding:10px;
-    border-radius:10px;
-    z-index:999;
-    display:none;
+  position:absolute;
+  bottom:15px;
+  left:15px;
+  background:white;
+  padding:10px;
+  border-radius:10px;
+  z-index:999;
+  display:none;
+  font-size:14px;
 }
 
 </style>
@@ -75,9 +76,9 @@ html, body{
 
   <div class="modal-box">
 
-    <h3>📍 OUS GPS + RUTA REAL</h3>
+    <h3>📍 OUS GPS PRO</h3>
 
-    <div id="estado">Iniciando...</div>
+    <div id="estado">Iniciando sistema...</div>
 
     <button class="btn" id="btnContinuar" style="display:none;">
       Ver mapa
@@ -121,18 +122,17 @@ const db = getFirestore(app);
 const params = new URLSearchParams(window.location.search);
 
 const correo = params.get("correo");
-const latDestino = parseFloat(params.get("lat"));
-const lngDestino = parseFloat(params.get("lng"));
+const direccion = params.get("direccion");
 
 // VALIDACION
-if(!correo || !latDestino || !lngDestino){
+if(!correo || !direccion){
   document.getElementById("estado").innerHTML =
-  "Faltan datos (correo o coordenadas)";
+  "Faltan datos (correo o dirección)";
   throw new Error("faltan datos");
 }
 
 document.getElementById("tec").textContent = correo;
-document.getElementById("dest").textContent = `${latDestino}, ${lngDestino}`;
+document.getElementById("dest").textContent = direccion;
 
 // MAPA
 let map;
@@ -140,7 +140,47 @@ let markerTec;
 let markerDest;
 let ruta;
 
-// INICIAR MAPA
+// ===============================
+// 🔥 GEOCODING ROBUSTO
+// ===============================
+async function geocodificar(dir){
+
+  if(!dir) return null;
+
+  // 1. INTENTO NORMAL
+  let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dir)}`;
+
+  let res = await fetch(url);
+  let data = await res.json();
+
+  if(data.length > 0){
+    return {
+      lat: parseFloat(data[0].lat),
+      lng: parseFloat(data[0].lon)
+    };
+  }
+
+  // 2. LIMPIEZA PLUS CODE
+  let limpio = dir.replace(/^[0-9A-Z]{2,8}\+?[0-9A-Z]*\s/, "");
+
+  url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(limpio)}`;
+
+  res = await fetch(url);
+  data = await res.json();
+
+  if(data.length > 0){
+    return {
+      lat: parseFloat(data[0].lat),
+      lng: parseFloat(data[0].lon)
+    };
+  }
+
+  return null;
+}
+
+// ===============================
+// 🗺 MAPA
+// ===============================
 function initMap(lat,lng){
 
   map = L.map('map').setView([lat,lng],15);
@@ -150,14 +190,11 @@ function initMap(lat,lng){
   }).addTo(map);
 
   markerTec = L.marker([lat,lng]).addTo(map).bindPopup("Técnico");
-
-  markerDest = L.marker([latDestino,lngDestino])
-    .addTo(map)
-    .bindPopup("Destino")
-    .openPopup();
 }
 
-// RUTA REAL (OSRM)
+// ===============================
+// 🚗 RUTA REAL (OSRM)
+// ===============================
 async function obtenerRuta(origenLat, origenLng, destLat, destLng){
 
   const url =
@@ -170,7 +207,9 @@ async function obtenerRuta(origenLat, origenLng, destLat, destLng){
   return data.routes[0].geometry;
 }
 
-// GPS EN TIEMPO REAL
+// ===============================
+// 📡 GPS EN TIEMPO REAL
+// ===============================
 navigator.geolocation.watchPosition(
 
 async(pos)=>{
@@ -178,23 +217,31 @@ async(pos)=>{
   const lat = pos.coords.latitude;
   const lng = pos.coords.longitude;
 
-  // GUARDAR FIREBASE
   await setDoc(doc(db,"ubicaciones",correo),{
     correo,
     lat,
     lng,
-    destinoLat: latDestino,
-    destinoLng: lngDestino,
+    destino: direccion,
     fecha: new Date().toLocaleString()
   });
 
-  // PRIMERA VEZ
   if(!map){
+
+    const destino = await geocodificar(direccion);
+
+    if(!destino){
+      document.getElementById("estado").innerHTML =
+      "No se pudo encontrar la ubicación";
+      return;
+    }
 
     initMap(lat,lng);
 
-    // DIBUJAR RUTA REAL
-    const geo = await obtenerRuta(lat,lng,latDestino,lngDestino);
+    markerDest = L.marker([destino.lat,destino.lng])
+      .addTo(map)
+      .bindPopup("Destino");
+
+    const geo = await obtenerRuta(lat,lng,destino.lat,destino.lng);
 
     ruta = L.geoJSON(geo,{
       style:{
@@ -209,7 +256,6 @@ async(pos)=>{
     document.getElementById("btnContinuar").style.display="inline-block";
   }
 
-  // ACTUALIZAR POSICIÓN
   if(markerTec){
     markerTec.setLatLng([lat,lng]);
     map.setView([lat,lng]);
@@ -223,10 +269,10 @@ async(pos)=>{
 },
 
 {
-  enableHighAccuracy:true,
-  maximumAge:0,
-  timeout:15000
+  enableHighAccuracy:true
 }
+
+// ===============================
 
 );
 
@@ -240,13 +286,18 @@ document.getElementById("btnContinuar").onclick = ()=>{
   setTimeout(()=>map.invalidateSize(),300);
 };
 
-// GOOGLE MAPS NAV
+// GOOGLE MAPS
 document.getElementById("navBtn").onclick = ()=>{
 
-  const url =
-  `https://www.google.com/maps/dir/?api=1&destination=${latDestino},${lngDestino}`;
+  navigator.geolocation.getCurrentPosition((pos)=>{
 
-  window.open(url,"_blank");
+    const url =
+    `https://www.google.com/maps/dir/?api=1&destination=${direccion}`;
+
+    window.open(url,"_blank");
+
+  });
+
 };
 
 </script>
