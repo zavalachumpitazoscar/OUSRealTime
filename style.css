@@ -106,3 +106,9 @@ h3{
 .leaflet-control-container{
   z-index:9999 !important;
 }
+
+.leaflet-overlay-pane svg path{
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
