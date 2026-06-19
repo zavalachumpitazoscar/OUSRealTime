@@ -1,32 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Monitor OUS</title>
+<title>OUS - MONITOR EN VIVO</title>
 
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
-body{
-    margin:0;
-    font-family:Arial;
+html, body {
+  margin:0;
+  padding:0;
+  height:100%;
 }
 
-#map{
-    height:100vh;
-    width:100%;
+#map {
+  height:100vh;
+  width:100%;
+}
+
+.info {
+  position:absolute;
+  top:10px;
+  left:10px;
+  background:white;
+  padding:10px;
+  z-index:999;
+  border-radius:8px;
+  font-family:Arial;
 }
 
 </style>
-
 </head>
+
 <body>
+
+<div class="info">
+<b>🟢 OUS MONITOR EN VIVO</b><br>
+Técnicos activos en tiempo real
+</div>
 
 <div id="map"></div>
 
@@ -35,7 +49,6 @@ body{
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-
 import {
   getFirestore,
   collection,
@@ -43,73 +56,64 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
-
-  apiKey: "TU_API_KEY",
+  apiKey: "AIzaSyBz9IVIpECD16fSo5Sz2jc6SZkTJHr2bk0",
   authDomain: "ous-rastreo.firebaseapp.com",
   projectId: "ous-rastreo",
   storageBucket: "ous-rastreo.firebasestorage.app",
   messagingSenderId: "606108188440",
   appId: "1:606108188440:web:0416b98a7738af947ae86d"
-
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const map = L.map('map').setView([-12.0464,-77.0428],12);
+// MAPA
+const map = L.map('map').setView([-12.05, -77.04], 12);
 
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
- attribution:'© OpenStreetMap'
-}
-).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© OpenStreetMap'
+}).addTo(map);
 
+// MARCADORES POR TÉCNICO
 const markers = {};
 
-onSnapshot(
+// 🔥 ESCUCHA EN TIEMPO REAL
+onSnapshot(collection(db,"ubicaciones"), (snapshot)=>{
 
-  collection(db,"ubicaciones"),
+  snapshot.forEach((doc)=>{
 
-  (snapshot)=>{
+    const data = doc.data();
 
-    snapshot.forEach((documento)=>{
+    const id = data.correo;
 
-      const d = documento.data();
+    if(!data.lat || !data.lng) return;
 
-      const id = documento.id;
+    // si no existe marcador
+    if(!markers[id]){
 
-      if(!d.lat || !d.lng) return;
-
-      if(markers[id]){
-
-        markers[id].setLatLng([
-          d.lat,
-          d.lng
-        ]);
-
-      }
-      else{
-
-        markers[id] = L.marker([
-          d.lat,
-          d.lng
-        ])
+      markers[id] = L.marker([data.lat, data.lng])
         .addTo(map)
-        .bindPopup(
-          `
-          <b>${d.correo}</b><br>
-          ${d.fecha}
-          `
-        );
+        .bindPopup(`
+          <b>${id}</b><br>
+          Última actualización:<br>
+          ${data.fecha}
+        `);
 
-      }
+    }else{
 
-    });
+      // mover marcador
+      markers[id].setLatLng([data.lat, data.lng]);
 
-  }
+      markers[id].setPopupContent(`
+        <b>${id}</b><br>
+        Última actualización:<br>
+        ${data.fecha}
+      `);
+    }
 
-);
+  });
+
+});
 
 </script>
 
