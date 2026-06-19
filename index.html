@@ -76,12 +76,12 @@ html, body{
 
   <div class="modal-box">
 
-    <h3>📍 OUS GPS PRO</h3>
+    <h3>📍 OUS GPS ACTIVO</h3>
 
-    <div id="estado">Iniciando sistema...</div>
+    <div id="estado">Inicializando sistema...</div>
 
     <button class="btn" id="btnContinuar" style="display:none;">
-      Ver mapa
+      Ver mapa igual
     </button>
 
   </div>
@@ -118,42 +118,40 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// ======================
 // PARAMETROS
+// ======================
 const params = new URLSearchParams(window.location.search);
 
 const correo = params.get("correo");
 const direccion = params.get("direccion");
 
-// VALIDACION
-if(!correo || !direccion){
+// VALIDACION MINIMA
+if(!correo){
   document.getElementById("estado").innerHTML =
-  "Faltan datos (correo o dirección)";
-  throw new Error("faltan datos");
+  "Falta correo del técnico";
+  throw new Error("sin correo");
 }
 
 document.getElementById("tec").textContent = correo;
-document.getElementById("dest").textContent = direccion;
+document.getElementById("dest").textContent = direccion || "Sin destino";
 
-// MAPA
+// ======================
+// VARIABLES
+// ======================
 let map;
 let markerTec;
 let markerDest;
 let ruta;
+let destino = null;
 
-// ===============================
-// 🔥 GEOCODING ROBUSTO
-// ===============================
+// ======================
+// GEOCODING ROBUSTO
+// ======================
 async function geocodificar(dir){
 
   if(!dir) return null;
 
-  // 🔵 1. LIMPIEZA INTELIGENTE (Perú)
-  let limpio = dir
-    .replace(/Jr\.|Jiron|Av\.|Calle/gi, "")
-    .replace(/\d{5}/g, "") // quita códigos postales
-    .trim();
-
-  // 🔵 2. INTENTO 1: dirección original
   let url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(dir)}`;
 
   let res = await fetch(url);
@@ -166,24 +164,10 @@ async function geocodificar(dir){
     };
   }
 
-  // 🔵 3. INTENTO 2: dirección limpia
+  // fallback limpieza (JR, AV, etc)
+  let limpio = dir.replace(/Jr\.|Av\.|Calle|Jiron/gi,"");
+
   url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(limpio)}`;
-
-  res = await fetch(url);
-  data = await res.json();
-
-  if(data.length > 0){
-    return {
-      lat: parseFloat(data[0].lat),
-      lng: parseFloat(data[0].lon)
-    };
-  }
-
-  // 🔵 4. INTENTO 3: solo distrito + país (fallback fuerte)
-  const partes = dir.split(",");
-  const fallback = partes.length > 1 ? partes.slice(1).join(",") : dir;
-
-  url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(fallback)}`;
 
   res = await fetch(url);
   data = await res.json();
@@ -197,9 +181,10 @@ async function geocodificar(dir){
 
   return null;
 }
-// ===============================
-// 🗺 MAPA
-// ===============================
+
+// ======================
+// MAPA
+// ======================
 function initMap(lat,lng){
 
   map = L.map('map').setView([lat,lng],15);
@@ -211,14 +196,14 @@ function initMap(lat,lng){
   markerTec = L.marker([lat,lng]).addTo(map).bindPopup("Técnico");
 }
 
-// ===============================
-// 🚗 RUTA REAL (OSRM)
-// ===============================
-async function obtenerRuta(origenLat, origenLng, destLat, destLng){
+// ======================
+// RUTA REAL
+// ======================
+async function obtenerRuta(oLat,oLng,dLat,dLng){
 
   const url =
   `https://router.project-osrm.org/route/v1/driving/` +
-  `${origenLng},${origenLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+  `${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson`;
 
   const res = await fetch(url);
   const data = await res.json();
@@ -226,9 +211,9 @@ async function obtenerRuta(origenLat, origenLng, destLat, destLng){
   return data.routes[0].geometry;
 }
 
-// ===============================
-// 📡 GPS EN TIEMPO REAL
-// ===============================
+// ======================
+// GPS EN TIEMPO REAL
+// ======================
 navigator.geolocation.watchPosition(
 
 async(pos)=>{
@@ -236,45 +221,51 @@ async(pos)=>{
   const lat = pos.coords.latitude;
   const lng = pos.coords.longitude;
 
+  // FIREBASE SIEMPRE
   await setDoc(doc(db,"ubicaciones",correo),{
     correo,
     lat,
     lng,
-    destino: direccion,
+    destino: direccion || null,
     fecha: new Date().toLocaleString()
   });
 
+  // PRIMERA VEZ
   if(!map){
 
-    const destino = await geocodificar(direccion);
+    document.getElementById("estado").innerHTML =
+    "Buscando destino...";
 
-    if(!destino){
-      document.getElementById("estado").innerHTML =
-      "No se pudo encontrar la ubicación";
-      return;
-    }
+    destino = await geocodificar(direccion);
 
     initMap(lat,lng);
 
-    markerDest = L.marker([destino.lat,destino.lng])
-      .addTo(map)
-      .bindPopup("Destino");
+    // SI HAY DESTINO
+    if(destino){
 
-    const geo = await obtenerRuta(lat,lng,destino.lat,destino.lng);
+      markerDest = L.marker([destino.lat,destino.lng])
+        .addTo(map)
+        .bindPopup("Destino");
 
-    ruta = L.geoJSON(geo,{
-      style:{
-        color:"blue",
-        weight:5
-      }
-    }).addTo(map);
+      const geo = await obtenerRuta(lat,lng,destino.lat,destino.lng);
 
-    document.getElementById("estado").innerHTML =
-    "Ubicación lista con ruta real";
+      ruta = L.geoJSON(geo,{
+        style:{ color:"blue", weight:5 }
+      }).addTo(map);
+
+      document.getElementById("estado").innerHTML =
+      "Mapa con ruta activa";
+
+    }else{
+
+      document.getElementById("estado").innerHTML =
+      "Mapa activo (sin ubicación de destino)";
+    }
 
     document.getElementById("btnContinuar").style.display="inline-block";
   }
 
+  // actualizar técnico
   if(markerTec){
     markerTec.setLatLng([lat,lng]);
     map.setView([lat,lng]);
@@ -284,18 +275,20 @@ async(pos)=>{
 
 (err)=>{
   document.getElementById("estado").innerHTML =
-  "Error GPS: " + err.message;
+  "GPS error: " + err.message;
 },
 
 {
   enableHighAccuracy:true
 }
 
-// ===============================
+// ======================
 
 );
 
-// BOTÓN VER MAPA
+// ======================
+// BOTÓN MAPA
+// ======================
 document.getElementById("btnContinuar").onclick = ()=>{
 
   document.getElementById("modal").style.display="none";
@@ -305,18 +298,22 @@ document.getElementById("btnContinuar").onclick = ()=>{
   setTimeout(()=>map.invalidateSize(),300);
 };
 
+// ======================
 // GOOGLE MAPS
+// ======================
 document.getElementById("navBtn").onclick = ()=>{
 
-  navigator.geolocation.getCurrentPosition((pos)=>{
+  if(destino){
 
     const url =
-    `https://www.google.com/maps/dir/?api=1&destination=${direccion}`;
+    `https://www.google.com/maps/dir/?api=1&destination=${destino.lat},${destino.lng}`;
 
     window.open(url,"_blank");
 
-  });
+  }else{
 
+    alert("No hay destino definido");
+  }
 };
 
 </script>
