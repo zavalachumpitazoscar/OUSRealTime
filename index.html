@@ -184,8 +184,9 @@ navigator.geolocation.watchPosition(async(pos)=>{
 
 setTimeout(()=>{
   map.fitBounds(ruta.getBounds(),{
-    padding:[700,700]
-  });
+  padding:[150,150],
+  maxZoom:13
+});
 },300);
 
   }
