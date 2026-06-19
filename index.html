@@ -1,16 +1,103 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GPS Técnico</title>
-</head>
+    <title>Monitor OUS</title>
 
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <style>
+        body{
+            font-family: Arial;
+            margin:20px;
+        }
+
+        #map{
+            height:500px;
+            width:100%;
+            margin-top:15px;
+        }
+    </style>
+</head>
 <body>
 
-<h2>Rastreo OUS</h2>
+<h2>Ubicación Técnico</h2>
 
-<p id="estado">Obteniendo ubicación...</p>
+<div id="datos">
+Cargando...
+</div>
 
-<script type="module" src="app.js"></script>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBz9IVIpECD16fSo5Sz2jc6SZkTJHr2bk0",
+  authDomain: "ous-rastreo.firebaseapp.com",
+  projectId: "ous-rastreo",
+  storageBucket: "ous-rastreo.firebasestorage.app",
+  messagingSenderId: "606108188440",
+  appId: "1:606108188440:web:0416b98a7738af947ae86d"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const map = L.map('map').setView([-12.0464, -77.0428], 13);
+
+L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    attribution: '&copy; OpenStreetMap'
+  }
+).addTo(map);
+
+let marker;
+
+onSnapshot(
+  doc(db, "ubicaciones", "oscar"),
+  (snapshot) => {
+
+    if (!snapshot.exists()) {
+      document.getElementById("datos").innerHTML =
+        "No existe información";
+      return;
+    }
+
+    const d = snapshot.data();
+
+    document.getElementById("datos").innerHTML = `
+      <b>Técnico:</b> ${d.tecnico}<br>
+      <b>Latitud:</b> ${d.lat}<br>
+      <b>Longitud:</b> ${d.lng}<br>
+      <b>Fecha:</b> ${d.fecha}
+    `;
+
+    if(marker){
+      map.removeLayer(marker);
+    }
+
+    marker = L.marker([d.lat, d.lng])
+      .addTo(map)
+      .bindPopup(d.tecnico);
+
+    map.setView([d.lat, d.lng], 16);
+  }
+);
+
+</script>
 
 </body>
 </html>
