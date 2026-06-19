@@ -14,16 +14,16 @@ html,body{
   background:#f1f5f9;
 }
 
-/* MAPA */
+/* ================= MAPA ================= */
 #map{
   width:100%;
   height:100vh;
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  visibility:hidden;
+  opacity:0;
+  transition:opacity .3s ease;
 }
 
-/* MODAL */
+/* ================= MODAL ================= */
 .modal{
   position:fixed;
   inset:0;
@@ -31,7 +31,7 @@ html,body{
   display:flex;
   align-items:center;
   justify-content:center;
-  backdrop-filter: blur(8px);
+  backdrop-filter:blur(8px);
   z-index:9999;
 }
 
@@ -55,14 +55,13 @@ h3{
   margin-bottom:10px;
 }
 
-/* ESTADO */
 #estado{
   color:var(--muted);
   font-size:14px;
   margin:12px 0;
 }
 
-/* BOTONES */
+/* ================= BOTONES ================= */
 .btn{
   width:100%;
   padding:12px;
@@ -80,7 +79,7 @@ h3{
   background:#1d4ed8;
 }
 
-/* INFO PANEL */
+/* ================= INFO PANEL ================= */
 .info{
   position:absolute;
   bottom:20px;
@@ -92,6 +91,7 @@ h3{
   display:none;
   min-width:220px;
   font-size:13px;
+  z-index:999;
 }
 
 .badge{
@@ -102,4 +102,9 @@ h3{
   padding:3px 8px;
   border-radius:999px;
   font-size:11px;
+}
+
+/* FIX LEAFLET CONTROLS */
+.leaflet-control-container{
+  z-index:9999 !important;
 }
