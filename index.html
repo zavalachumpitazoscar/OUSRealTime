@@ -121,6 +121,26 @@ function initMap(lat,lng){
 }
 
 // ======================
+// RUTA POR CALLES (OSRM)
+// ======================
+async function obtenerRuta(oLat,oLng,dLat,dLng){
+
+  const url =
+  `https://router.project-osrm.org/route/v1/driving/` +
+  `${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if(!data.routes || data.routes.length === 0){
+    return null;
+  }
+
+  return data.routes[0].geometry;
+}
+
+
+// ======================
 // GPS
 // ======================
 navigator.geolocation.watchPosition(async(pos)=>{
@@ -139,8 +159,36 @@ navigator.geolocation.watchPosition(async(pos)=>{
     initMap(lat,lng);
 
     if(destino){
-      markerDest = L.marker([destino.lat,destino.lng]).addTo(map);
-    }
+
+  markerDest = L.marker([
+    destino.lat,
+    destino.lng
+  ]).addTo(map);
+
+  const geo = await obtenerRuta(
+    lat,
+    lng,
+    destino.lat,
+    destino.lng
+  );
+
+  if(geo){
+
+    ruta = L.geoJSON(geo,{
+      style:{
+        color:"#2563eb",
+        weight:6,
+        opacity:0.9
+      }
+    }).addTo(map);
+
+    setTimeout(()=>{
+      map.fitBounds(ruta.getBounds());
+    },300);
+
+  }
+
+}
 
     document.getElementById("estado").innerHTML =
       destino ? "Sistema listo con destino" : "Sistema activo sin destino";
