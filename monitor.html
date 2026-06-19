@@ -1,15 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Monitor OUS</title>
+
+<meta charset="utf-8">
+
+<title>Monitor OUS</title>
+
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<style>
+
+body{
+    margin:0;
+    font-family:Arial;
+}
+
+#map{
+    height:100vh;
+    width:100%;
+}
+
+</style>
+
 </head>
 <body>
 
-<h2>Ubicación Técnico</h2>
+<div id="map"></div>
 
-<div id="datos">
-Cargando...
-</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="module">
 
@@ -17,36 +38,77 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebas
 
 import {
   getFirestore,
-  doc,
+  collection,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBz9IVIpECD16fSo5Sz2jc6SZkTJHr2bk0",
+
+  apiKey: "TU_API_KEY",
   authDomain: "ous-rastreo.firebaseapp.com",
   projectId: "ous-rastreo",
   storageBucket: "ous-rastreo.firebasestorage.app",
   messagingSenderId: "606108188440",
   appId: "1:606108188440:web:0416b98a7738af947ae86d"
+
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const map = L.map('map').setView([-12.0464,-77.0428],12);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+ attribution:'© OpenStreetMap'
+}
+).addTo(map);
+
+const markers = {};
+
 onSnapshot(
-  doc(db, "ubicaciones", "oscar"),
-  (snapshot) => {
 
-    const d = snapshot.data();
+  collection(db,"ubicaciones"),
 
-    document.getElementById("datos").innerHTML =
-      `
-      Técnico: ${d.tecnico}<br>
-      Latitud: ${d.lat}<br>
-      Longitud: ${d.lng}<br>
-      Fecha: ${d.fecha}
-      `;
+  (snapshot)=>{
+
+    snapshot.forEach((documento)=>{
+
+      const d = documento.data();
+
+      const id = documento.id;
+
+      if(!d.lat || !d.lng) return;
+
+      if(markers[id]){
+
+        markers[id].setLatLng([
+          d.lat,
+          d.lng
+        ]);
+
+      }
+      else{
+
+        markers[id] = L.marker([
+          d.lat,
+          d.lng
+        ])
+        .addTo(map)
+        .bindPopup(
+          `
+          <b>${d.correo}</b><br>
+          ${d.fecha}
+          `
+        );
+
+      }
+
+    });
+
   }
+
 );
 
 </script>
