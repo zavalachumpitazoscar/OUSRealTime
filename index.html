@@ -159,22 +159,28 @@ navigator.geolocation.watchPosition(async(pos)=>{
 // ======================
 // BOTÓN MAPA (FIX LEAFLET)
 // ======================
-document.getElementById("btnContinuar").onclick=()=>{
+document.getElementById("btnContinuar").onclick = () => {
 
-  document.getElementById("modal").style.display="none";
+  document.getElementById("modal").style.display = "none";
 
   const mapDiv = document.getElementById("map");
   const info = document.getElementById("info");
 
-  mapDiv.style.visibility="visible";
-  mapDiv.style.opacity="1";
+  // 🔥 IMPORTANTE: display block (NO visibility)
+  mapDiv.style.display = "block";
+  info.style.display = "block";
 
-  info.style.display="block";
+  setTimeout(() => {
 
-  setTimeout(()=>{
-    map.invalidateSize();
+    map.invalidateSize(true);
+
+    // 🔥 fuerza recalculo real del mapa
     window.dispatchEvent(new Event("resize"));
-  },400);
+
+    // opcional: centra mapa correctamente
+    map.setView(map.getCenter(), map.getZoom());
+
+  }, 500);
 };
 
 // ======================
