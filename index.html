@@ -14,7 +14,6 @@
 
 <!-- MODAL -->
 <div class="modal" id="modal">
-
   <div class="modal-box">
 
     <h3>📍 OUS GPS PRO</h3>
@@ -26,7 +25,6 @@
     </button>
 
   </div>
-
 </div>
 
 <!-- MAPA -->
@@ -61,7 +59,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// PARAMS
+// ======================
 const params = new URLSearchParams(window.location.search);
 const correo = params.get("correo");
 const direccion = params.get("direccion");
@@ -73,13 +71,16 @@ if(!correo){
 
 document.getElementById("tec").textContent = correo;
 
-// VARIABLES
+// ======================
 let map;
 let markerTec;
 let markerDest;
+let ruta;
 let destino = null;
 
-// GEOCODING
+// ======================
+// GEOCODING ROBUSTO
+// ======================
 async function geocodificar(dir){
 
   if(!dir) return null;
@@ -105,18 +106,23 @@ async function geocodificar(dir){
   return null;
 }
 
+// ======================
 // MAPA
+// ======================
 function initMap(lat,lng){
-  map = L.map('map').setView([lat,lng],15);
+
+  map = L.map('map',{zoomControl:true}).setView([lat,lng],15);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© OSM'
+    attribution:'© OpenStreetMap'
   }).addTo(map);
 
   markerTec = L.marker([lat,lng]).addTo(map);
 }
 
+// ======================
 // GPS
+// ======================
 navigator.geolocation.watchPosition(async(pos)=>{
 
   const lat = pos.coords.latitude;
@@ -138,6 +144,7 @@ navigator.geolocation.watchPosition(async(pos)=>{
 
     document.getElementById("estado").innerHTML =
       destino ? "Sistema listo con destino" : "Sistema activo sin destino";
+
   }
 
   if(markerTec){
@@ -145,20 +152,42 @@ navigator.geolocation.watchPosition(async(pos)=>{
     map.setView([lat,lng]);
   }
 
-});
+},(err)=>{
+  document.getElementById("estado").innerHTML="GPS error: "+err.message;
+},{enableHighAccuracy:true});
 
-// BOTÓN MAPA
+// ======================
+// BOTÓN MAPA (FIX LEAFLET)
+// ======================
 document.getElementById("btnContinuar").onclick=()=>{
+
   document.getElementById("modal").style.display="none";
-  document.getElementById("map").style.display="block";
-  document.getElementById("info").style.display="block";
-  setTimeout(()=>map.invalidateSize(),300);
+
+  const mapDiv = document.getElementById("map");
+  const info = document.getElementById("info");
+
+  mapDiv.style.visibility="visible";
+  mapDiv.style.opacity="1";
+
+  info.style.display="block";
+
+  setTimeout(()=>{
+    map.invalidateSize();
+    window.dispatchEvent(new Event("resize"));
+  },400);
 };
 
+// ======================
 // GOOGLE MAPS
+// ======================
 document.getElementById("navBtn").onclick=()=>{
+
   if(destino){
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destino.lat},${destino.lng}`);
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${destino.lat},${destino.lng}`
+    );
+  }else{
+    alert("No hay destino definido");
   }
 };
 
