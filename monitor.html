@@ -1,1 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitor OUS</title>
+</head>
+<body>
 
+<h2>Ubicación Técnico</h2>
+
+<div id="datos">
+Cargando...
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBz9IVIpECD16fSo5Sz2jc6SZkTJHr2bk0"
+  authDomain: "ous-rastreo.firebaseapp.com",
+  projectId: "ous-rastreo",
+  storageBucket: "ous-rastreo.firebasestorage.app",
+  messagingSenderId: "606108188440",
+  appId: "1:606108188440:web:0416b98a7738af947ae86d"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+onSnapshot(
+  doc(db, "ubicaciones", "oscar"),
+  (snapshot) => {
+
+    const d = snapshot.data();
+
+    document.getElementById("datos").innerHTML =
+      `
+      Técnico: ${d.tecnico}<br>
+      Latitud: ${d.lat}<br>
+      Longitud: ${d.lng}<br>
+      Fecha: ${d.fecha}
+      `;
+  }
+);
+
+</script>
+
+</body>
+</html>
