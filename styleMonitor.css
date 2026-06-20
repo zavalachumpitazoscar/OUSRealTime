@@ -104,3 +104,9 @@ body{
   margin:0 auto 15px auto;
   object-fit:contain;
 }
+
+.subtitulo{
+  margin-top:8px;
+  color:#94a3b8;
+  font-size:12px;
+}
