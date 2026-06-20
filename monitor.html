@@ -1,45 +1,44 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>OUS - MONITOR EN VIVO</title>
+<title>OUS Monitor GPS</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="styleMonitor.css">
 
-<style>
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-html, body {
-  margin:0;
-  padding:0;
-  height:100%;
-}
-
-#map {
-  height:100vh;
-  width:100%;
-}
-
-.info {
-  position:absolute;
-  top:10px;
-  left:10px;
-  background:white;
-  padding:10px;
-  z-index:999;
-  border-radius:8px;
-  font-family:Arial;
-}
-
-</style>
 </head>
 
 <body>
 
-<div class="info">
-<b>🟢 OUS MONITOR EN VIVO</b><br>
-Técnicos activos en tiempo real
+<div class="sidebar">
+
+  <div class="sidebar-header">
+
+    <h2>🛰️ OUS Monitor</h2>
+
+    <div class="contador" id="contador">
+      0 técnicos activos
+    </div>
+
+  </div>
+
+  <div class="acciones">
+
+    <button id="btnTodos" class="btn-todos">
+      🗺 Mostrar todos
+    </button>
+
+  </div>
+
+  <div id="listaTecnicos" class="lista-tecnicos">
+  </div>
+
 </div>
 
 <div id="map"></div>
@@ -49,6 +48,7 @@ Técnicos activos en tiempo real
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+
 import {
   getFirestore,
   collection,
@@ -56,7 +56,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBz9IVIpECD16fSo5Sz2jc6SZkTJHr2bk0",
+  apiKey: "TU_API_KEY",
   authDomain: "ous-rastreo.firebaseapp.com",
   projectId: "ous-rastreo",
   storageBucket: "ous-rastreo.firebasestorage.app",
@@ -67,18 +67,92 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// MAPA
-const map = L.map('map').setView([-12.05, -77.04], 12);
+const map = L.map('map').setView([-12.05,-77.04],12);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'© OpenStreetMap'
-}).addTo(map);
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+ attribution:'© OpenStreetMap'
+}
+).addTo(map);
 
-// MARCADORES POR TÉCNICO
 const markers = {};
+const tecnicos = {};
 
-// 🔥 ESCUCHA EN TIEMPO REAL
-onSnapshot(collection(db,"ubicaciones"), (snapshot)=>{
+const listaTecnicos =
+document.getElementById("listaTecnicos");
+
+const contador =
+document.getElementById("contador");
+
+function renderLista(){
+
+  listaTecnicos.innerHTML = "";
+
+  Object.keys(tecnicos)
+  .sort()
+  .forEach(id=>{
+
+    const item =
+    document.createElement("div");
+
+    item.className = "tecnico";
+
+    item.innerHTML = `
+      <div class="nombre">
+        🟢 ${id}
+      </div>
+    `;
+
+    item.onclick = ()=>{
+
+      Object.keys(markers).forEach(key=>{
+
+        if(key !== id){
+          map.removeLayer(markers[key]);
+        }
+
+      });
+
+      markers[id].addTo(map);
+
+      map.flyTo(
+        markers[id].getLatLng(),
+        16,
+        {
+          duration:1.5
+        }
+      );
+
+      markers[id].openPopup();
+
+    };
+
+    listaTecnicos.appendChild(item);
+
+  });
+
+  contador.innerHTML =
+  `${Object.keys(tecnicos).length} técnicos activos`;
+
+}
+
+document
+.getElementById("btnTodos")
+.onclick = ()=>{
+
+  Object.values(markers)
+  .forEach(marker=>{
+
+    marker.addTo(map);
+
+  });
+
+};
+
+onSnapshot(
+collection(db,"ubicaciones"),
+(snapshot)=>{
 
   snapshot.forEach((doc)=>{
 
@@ -88,30 +162,37 @@ onSnapshot(collection(db,"ubicaciones"), (snapshot)=>{
 
     if(!data.lat || !data.lng) return;
 
-    // si no existe marcador
+    tecnicos[id] = data;
+
     if(!markers[id]){
 
-      markers[id] = L.marker([data.lat, data.lng])
-        .addTo(map)
-        .bindPopup(`
-          <b>${id}</b><br>
-          Última actualización:<br>
-          ${data.fecha}
-        `);
+      markers[id] = L.marker([
+        data.lat,
+        data.lng
+      ])
+      .addTo(map)
+      .bindPopup(`
+        <b>${id}</b><br>
+        ${data.fecha}
+      `);
 
     }else{
 
-      // mover marcador
-      markers[id].setLatLng([data.lat, data.lng]);
+      markers[id].setLatLng([
+        data.lat,
+        data.lng
+      ]);
 
       markers[id].setPopupContent(`
         <b>${id}</b><br>
-        Última actualización:<br>
         ${data.fecha}
       `);
+
     }
 
   });
+
+  renderLista();
 
 });
 
