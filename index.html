@@ -265,6 +265,25 @@ document.getElementById("navBtn").onclick=()=>{
   }
 };
 
+document.getElementById("btnCentrar").onclick = () => {
+
+  if(ruta){
+
+    map.fitBounds(ruta.getBounds(),{
+      padding:[80,80]
+    });
+
+  }else if(markerTec){
+
+    map.setView(
+      markerTec.getLatLng(),
+      15
+    );
+
+  }
+
+};
+
 </script>
 
 </body>
