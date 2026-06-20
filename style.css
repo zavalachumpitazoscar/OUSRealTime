@@ -64,17 +64,17 @@ h3{
   width:100%;
   padding:12px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
   background:var(--primary);
   color:white;
   font-weight:600;
   cursor:pointer;
-  transition:.2s;
+  transition:all .25s ease;
 }
 
 .btn:hover{
-  transform:translateY(-1px);
-  background:#1d4ed8;
+  transform:translateY(-2px);
+  box-shadow:0 10px 25px rgba(37,99,235,.35);
 }
 
 /* ================= INFO PANEL ================= */
@@ -93,16 +93,47 @@ h3{
   max-width:420px;
   font-size:14px;
   z-index:999;
-}
+  overflow:hidden;
 
+  animation:slideUp .4s ease;
+}
 .badge{
-  display:inline-block;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
   margin-top:6px;
-  background:#e0e7ff;
-  color:var(--primary);
-  padding:3px 8px;
+  background:#dcfce7;
+  color:#166534;
+  padding:5px 10px;
   border-radius:999px;
   font-size:11px;
+  font-weight:600;
+}
+
+.badge::before{
+  content:"";
+  width:8px;
+  height:8px;
+  background:#22c55e;
+  border-radius:50%;
+  animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+  0%{
+    transform:scale(1);
+    opacity:1;
+  }
+
+  50%{
+    transform:scale(1.5);
+    opacity:.4;
+  }
+
+  100%{
+    transform:scale(1);
+    opacity:1;
+  }
 }
 
 /* FIX LEAFLET CONTROLS */
@@ -113,5 +144,27 @@ h3{
 .leaflet-overlay-pane svg path{
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+@keyframes slideUp{
+  from{
+    opacity:0;
+    transform:translate(-50%,30px);
+  }
+
+  to{
+    opacity:1;
+    transform:translate(-50%,0);
+  }
+}
+
+.info::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:4px;
+  background:var(--primary);
 }
 
