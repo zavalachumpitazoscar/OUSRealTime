@@ -222,15 +222,29 @@ document.getElementById("btnContinuar").onclick = () => {
 
   setTimeout(() => {
 
-    map.invalidateSize(true);
+  map.invalidateSize(true);
 
-    // 🔥 fuerza recalculo real del mapa
-    window.dispatchEvent(new Event("resize"));
+  window.dispatchEvent(new Event("resize"));
 
-    // opcional: centra mapa correctamente
-    map.setView(map.getCenter(), map.getZoom());
+  if (ruta) {
 
-  }, 500);
+    map.fitBounds(
+      ruta.getBounds(),
+      {
+        padding: [80,80]
+      }
+    );
+
+  } else if (markerTec) {
+
+    map.setView(
+      markerTec.getLatLng(),
+      15
+    );
+
+  }
+
+}, 500);
 };
 
 // ======================
