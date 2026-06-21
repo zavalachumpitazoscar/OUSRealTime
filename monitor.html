@@ -170,6 +170,12 @@ collection(db,"ubicaciones"),
 
     const data = doc.data();
 
+    const minutosSinActualizar =
+    Math.floor(
+    (Date.now() - data.timestamp)
+    / 60000
+    );
+
     const id = data.correo;
 
     if(!data.lat || !data.lng) return;
