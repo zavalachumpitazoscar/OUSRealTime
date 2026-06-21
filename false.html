@@ -293,9 +293,10 @@ document
   }
 
   window.open(
-    "https://www.google.com/maps/search/?api=1&query="
-    + encodeURIComponent(direccion)
-  );
+  "https://www.google.com/maps/dir/?api=1" +
+  "&destination=" + encodeURIComponent(direccion) +
+  "&travelmode=driving"
+);
 
 };
 
