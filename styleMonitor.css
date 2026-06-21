@@ -110,3 +110,25 @@ body{
   color:#94a3b8;
   font-size:12px;
 }
+
+.toggle-sidebar{
+  position:absolute;
+  top:20px;
+  right:-18px;
+  width:36px;
+  height:36px;
+  border:none;
+  border-radius:50%;
+  background:#2563eb;
+  color:white;
+  cursor:pointer;
+  box-shadow:0 5px 15px rgba(0,0,0,.2);
+}
+
+.sidebar.oculta{
+  margin-left:-320px;
+}
+
+.sidebar{
+  transition:.3s;
+}
