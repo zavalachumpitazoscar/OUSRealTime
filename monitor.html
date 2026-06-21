@@ -202,22 +202,6 @@ collection(db,"ubicaciones"),
 
     const data = doc.data();
 
-    const minutosSinActualizar =
-    Math.floor(
-    (Date.now() - data.timestamp)
-    / 60000
-    );
-
-    let estado = "🟢 En línea";
-
-if(minutosSinActualizar >= 2){
-  estado = "🟠 Sin actualizar";
-}
-
-if(minutosSinActualizar >= 5){
-  estado = "🔴 Desconectado";
-}
-
     const id = data.correo;
 
     if(!data.lat || !data.lng) return;
