@@ -144,3 +144,17 @@ body{
   font-size:12px;
   color:#64748b;
 }
+
+.tecnico.activo{
+  background:#2563eb;
+  color:white;
+  border-radius:12px;
+  margin:6px;
+  box-shadow:0 8px 20px rgba(37,99,235,.35);
+}
+
+.tecnico.activo .nombre,
+.tecnico.activo .estado,
+.tecnico.activo .ultima{
+  color:white;
+}
