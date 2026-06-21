@@ -111,10 +111,18 @@ function renderLista(){
     item.className = "tecnico";
 
     item.innerHTML = `
-      <div class="nombre">
-        🟢 ${id}
-      </div>
-    `;
+  <div class="nombre">
+    ${id}
+  </div>
+
+  <div class="estado">
+    ${estado}
+  </div>
+
+  <div class="ultima">
+    Hace ${minutosSinActualizar} min
+  </div>
+`;
 
     item.onclick = ()=>{
 
@@ -175,6 +183,16 @@ collection(db,"ubicaciones"),
     (Date.now() - data.timestamp)
     / 60000
     );
+
+    let estado = "🟢 En línea";
+
+if(minutosSinActualizar >= 2){
+  estado = "🟠 Sin actualizar";
+}
+
+if(minutosSinActualizar >= 5){
+  estado = "🔴 Desconectado";
+}
 
     const id = data.correo;
 
