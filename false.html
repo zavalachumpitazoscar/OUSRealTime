@@ -234,12 +234,33 @@ async(pos)=>{
 // SIMULA CALCULO RUTA
 // ======================
 
+const estado =
+document.getElementById("estado");
+
+setTimeout(()=>{
+  estado.innerHTML =
+  "Conectando con GPS...";
+},500);
+
+setTimeout(()=>{
+  estado.innerHTML =
+  "Obteniendo ubicación actual...";
+},2000);
+
+setTimeout(()=>{
+  estado.innerHTML =
+  "Analizando mejor recorrido...";
+},4000);
+
+setTimeout(()=>{
+  estado.innerHTML =
+  "Preparando navegación...";
+},6000);
+
 setTimeout(()=>{
 
-  document
-  .getElementById("estado")
-  .innerHTML =
-  "Ruta lista para navegación.";
+  estado.innerHTML =
+  "✅ Ruta lista para navegación.";
 
   document
   .getElementById("loader")
@@ -251,7 +272,7 @@ setTimeout(()=>{
   .disabled =
   false;
 
-},3000);
+},8000);
 
 // ======================
 // GOOGLE MAPS
