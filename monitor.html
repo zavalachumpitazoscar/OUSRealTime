@@ -257,13 +257,17 @@ collection(db,"ubicaciones"),
 
 });
 
-  document
+document
 .getElementById("toggleSidebar")
 .onclick = ()=>{
 
   document
   .querySelector(".sidebar")
   .classList.toggle("oculta");
+
+  setTimeout(() => map.invalidateSize(), 100);
+  setTimeout(() => map.invalidateSize(), 300);
+  setTimeout(() => map.invalidateSize(), 500);
 
 };
   
