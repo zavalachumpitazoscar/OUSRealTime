@@ -101,28 +101,46 @@ function renderLista(){
 
   listaTecnicos.innerHTML = "";
 
-  Object.keys(tecnicos)
-  .sort()
-  .forEach(id=>{
+Object.keys(tecnicos)
+.sort()
+.forEach(id=>{
 
-    const item =
-    document.createElement("div");
+  const data = tecnicos[id];
 
-    item.className = "tecnico";
+  const minutosSinActualizar =
+  Math.floor(
+    (Date.now() - data.timestamp)
+    / 60000
+  );
 
-    item.innerHTML = `
-  <div class="nombre">
-    ${id}
-  </div>
+  let estado = "🟢 En línea";
 
-  <div class="estado">
-    ${estado}
-  </div>
+  if(minutosSinActualizar >= 2){
+    estado = "🟠 Sin actualizar";
+  }
 
-  <div class="ultima">
-    Hace ${minutosSinActualizar} min
-  </div>
-`;
+  if(minutosSinActualizar >= 5){
+    estado = "🔴 Desconectado";
+  }
+
+  const item =
+  document.createElement("div");
+
+  item.className = "tecnico";
+
+  item.innerHTML = `
+    <div class="nombre">
+      ${id}
+    </div>
+
+    <div class="estado">
+      ${estado}
+    </div>
+
+    <div class="ultima">
+      Hace ${minutosSinActualizar} min
+    </div>
+  `;
 
     item.onclick = ()=>{
 
