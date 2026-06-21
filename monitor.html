@@ -90,8 +90,6 @@ L.tileLayer(
 
 const markers = {};
 const tecnicos = {};
-const nombre =
-id.split("@")[0];
 let tecnicoSeleccionado = null;
 
 const listaTecnicos =
@@ -150,7 +148,7 @@ id === tecnicoSeleccionado
 
   item.innerHTML = `
   <div class="nombre">
-    ${nombre}
+    ${id}
   </div>
 
   <div class="estado">
