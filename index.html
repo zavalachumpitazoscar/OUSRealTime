@@ -152,8 +152,13 @@ navigator.geolocation.watchPosition(async(pos)=>{
   const lng = pos.coords.longitude;
 
   await setDoc(doc(db,"ubicaciones",correo),{
-    correo,lat,lng,direccion,fecha:new Date().toLocaleString()
-  });
+  correo,
+  lat,
+  lng,
+  direccion,
+  fecha:new Date().toLocaleString(),
+  timestamp: Date.now()
+});
 
   if(!map){
 
