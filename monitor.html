@@ -130,6 +130,14 @@ Object.keys(tecnicos)
     estado = "🔴 Desconectado";
   }
 
+  let tiempoTexto;
+
+if(minutosSinActualizar === 0){
+  tiempoTexto = "Hace unos segundos";
+}else{
+  tiempoTexto = `Hace ${minutosSinActualizar} min`;
+}
+
   const item =
   document.createElement("div");
 
@@ -192,6 +200,10 @@ document
 .getElementById("btnTodos")
 .onclick = ()=>{
 
+  tecnicoSeleccionado = null;
+
+  renderLista();
+
   Object.values(markers)
   .forEach(marker=>{
 
@@ -247,6 +259,16 @@ collection(db,"ubicaciones"),
 
 });
 
+  document
+.getElementById("toggleSidebar")
+.onclick = ()=>{
+
+  document
+  .querySelector(".sidebar")
+  .classList.toggle("oculta");
+
+};
+  
 </script>
 
 </body>
