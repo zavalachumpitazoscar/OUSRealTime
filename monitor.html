@@ -90,6 +90,7 @@ L.tileLayer(
 
 const markers = {};
 const tecnicos = {};
+let tecnicoSeleccionado = null;
 
 const listaTecnicos =
 document.getElementById("listaTecnicos");
@@ -132,23 +133,29 @@ Object.keys(tecnicos)
   const item =
   document.createElement("div");
 
-  item.className = "tecnico";
+  item.className =
+id === tecnicoSeleccionado
+? "tecnico activo"
+: "tecnico";
 
   item.innerHTML = `
-    <div class="nombre">
-      ${id}
-    </div>
+  <div class="nombre">
+    ${id}
+  </div>
 
-    <div class="estado">
-      ${estado}
-    </div>
+  <div class="estado">
+    ${estado}
+  </div>
 
-    <div class="ultima">
-      Hace ${minutosSinActualizar} min
-    </div>
-  `;
+  <div class="ultima">
+    ${tiempoTexto}
+  </div>
+`;
 
     item.onclick = ()=>{
+
+      tecnicoSeleccionado = id;
+renderLista();
 
       Object.keys(markers).forEach(key=>{
 
